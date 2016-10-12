@@ -116,23 +116,14 @@ namespace ModernHttpClient
             // NB: Even closing a socket must be done off the UI thread. Cray!
             cancellationToken.Register(() => Task.Run(() => call.Cancel()));
 
-            var resp = default(Response);
-            try {
-                resp = await call.EnqueueAsync().ConfigureAwait(false);
-                var newReq = resp.Request();
-                var newUri = newReq == null ? null : newReq.Uri();
-                request.RequestUri = new Uri(newUri.ToString());
-                if (throwOnCaptiveNetwork && newUri != null) {
-                    if (url.Host != newUri.Host) {
-                        throw new CaptiveNetworkException(new Uri(java_uri), new Uri(newUri.ToString()));
-                    }
+            var resp = await call.EnqueueAsync().ConfigureAwait(false);
+            var newReq = resp.Request();
+            var newUri = newReq == null ? null : newReq.Uri();
+            request.RequestUri = new Uri(newUri.ToString());
+            if (throwOnCaptiveNetwork && newUri != null) {
+                if (url.Host != newUri.Host) {
+                    throw new CaptiveNetworkException(new Uri(java_uri), new Uri(newUri.ToString()));
                 }
-            } catch (IOException ex) {
-                if (ex.Message.ToLowerInvariant().Contains("canceled")) {
-                    throw new OperationCanceledException();
-                }
-
-                throw;
             }
 
             var respBody = resp.Body();
@@ -201,7 +192,7 @@ namespace ModernHttpClient
 
         public bool Verify(string hostname, ISSLSession session)
         {
-            return verifyServerCertificate(hostname, session) & verifyClientCiphers(hostname, session);
+            return verifyServerCertificate(hostname, session);
         }
 
         /// <summary>
@@ -264,23 +255,5 @@ namespace ModernHttpClient
             // Call the delegate to validate
             return ServicePointManager.ServerCertificateValidationCallback(hostname, root, chain, errors);
         }
-
-		/// <summary>
-		/// Verifies client ciphers and is only available in Mono and Xamarin products.
-		/// </summary>
-		/// <returns><c>true</c>, if client ciphers was verifyed, <c>false</c> otherwise.</returns>
-		/// <param name="hostname"></param>
-		/// <param name="session"></param>
-		static bool verifyClientCiphers(string hostname, ISSLSession session)
-		{
-            /*var callback = ServicePointManager.ClientCipherSuitesCallback;
-            if (callback == null) return true;
-
-            var protocol = session.Protocol.StartsWith("SSL", StringComparison.InvariantCulture) ? SecurityProtocolType.Ssl3 : SecurityProtocolType.Tls;
-            var acceptedCiphers = callback(protocol, new[] { session.CipherSuite });
-
-            return acceptedCiphers.Contains(session.CipherSuite);*/
-			return true;
-		}
     }
 }
