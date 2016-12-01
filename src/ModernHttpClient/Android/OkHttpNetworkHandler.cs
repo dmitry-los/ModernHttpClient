@@ -169,11 +169,11 @@ namespace ModernHttpClient
             public void OnFailure(Request p0, Java.IO.IOException p1)
             {
                 // Kind of a hack, but the simplest way to find out that server cert. validation failed
-                if (p1.Message == String.Format("Hostname '{0}' was not verified", p0.Url().Host)) {
+                if (p1.Message == $"Hostname '{p0.Url().Host}' was not verified") {
                     tcs.TrySetException(new WebException(p1.LocalizedMessage, WebExceptionStatus.TrustFailure));
                 } else if (p1.Message.ToLowerInvariant().Contains("canceled"))
                 {
-                    tcs.TrySetException(new OperationCanceledException());
+                    tcs.TrySetException(new Android.OS.OperationCanceledException());
                 } else {
                     tcs.TrySetException(new WebException(p1.Message));
                 }

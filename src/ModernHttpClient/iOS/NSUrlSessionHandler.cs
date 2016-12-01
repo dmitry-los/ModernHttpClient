@@ -9,21 +9,13 @@ using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using Foundation;
 using ModernHttpClient.CoreFoundation;
 using ModernHttpClient.Foundation;
 
-#if UNIFIED
-using Foundation;
-using Security;
-#else
-using Foundation;
-using Security;
-using System.Globalization;
-#endif
-
 namespace ModernHttpClient
 {
-    class InflightOperation
+	class InflightOperation
     {
         public HttpRequestMessage Request { get; set; }
         public TaskCompletionSource<HttpResponseMessage> FutureResponse { get; set; }
@@ -54,17 +46,8 @@ namespace ModernHttpClient
         public bool DisableCaching { get; set; }
 
         public NativeMessageHandler(): this(false, false) { }
-        public NativeMessageHandler(bool throwOnCaptiveNetwork, bool customSSLVerification, NativeCookieHandler cookieHandler = null, SslProtocol? minimumSSLProtocol = null)
+        public NativeMessageHandler(bool throwOnCaptiveNetwork, bool customSSLVerification, NativeCookieHandler cookieHandler = null)
         {
-            var configuration = NSUrlSessionConfiguration.DefaultSessionConfiguration;
-
-            // System.Net.ServicePointManager.SecurityProtocol provides a mechanism for specifying supported protocol types
-            // for System.Net. Since iOS only provides an API for a minimum and maximum protocol we are not able to port
-            // this configuration directly and instead use the specified minimum value when one is specified.
-            if (minimumSSLProtocol.HasValue) {
-                configuration.TLSMinimumSupportedProtocol = minimumSSLProtocol.Value;
-            }
-
             session = NSUrlSession.FromConfiguration(
                 NSUrlSessionConfiguration.DefaultSessionConfiguration, 
                 new DataTaskDelegate(this), null);
@@ -187,7 +170,7 @@ namespace ModernHttpClient
                     content.Progress = data.Progress;
 
                     // NB: The double cast is because of a Xamarin compiler bug
-                    int status = (int)(int)resp.StatusCode;
+                    int status = (int)resp.StatusCode;
                     var ret = new HttpResponseMessage((HttpStatusCode)status) {
                         Content = content,
                         RequestMessage = data.Request,
